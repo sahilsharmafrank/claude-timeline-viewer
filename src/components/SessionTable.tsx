@@ -38,6 +38,10 @@ function topTools(tools: Record<string, number>): string {
   return shown.join(" ");
 }
 
+function shortId(id: string): string {
+  return id.length > 8 ? id.slice(0, 8) : id;
+}
+
 const COLUMNS: { label: string; key?: SortKey; numeric?: boolean }[] = [
   { label: "Date", key: "date" },
   { label: "Project", key: "project" },
@@ -48,6 +52,7 @@ const COLUMNS: { label: string; key?: SortKey; numeric?: boolean }[] = [
   { label: "Tools" },
   { label: "Model" },
   { label: "Branch" },
+  { label: "Session" },
 ];
 
 export function SessionTable({
@@ -122,6 +127,9 @@ export function SessionTable({
             <td className="px-2 py-1">{topTools(s.tools)}</td>
             <td className="px-2 py-1">{s.models.join(", ")}</td>
             <td className="px-2 py-1">{s.gitBranch ?? "—"}</td>
+            <td className="whitespace-nowrap px-2 py-1 font-mono text-xs" title={s.sessionId}>
+              {shortId(s.sessionId)}
+            </td>
           </tr>
         ))}
       </tbody>

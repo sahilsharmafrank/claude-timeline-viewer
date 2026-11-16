@@ -29,3 +29,10 @@ test("date cell shows the viewer's local date and time", () => {
   expect(time.tagName).toBe("TIME");
   expect(time).toHaveAttribute("datetime", "2026-11-15T10:00:00Z");
 });
+
+test("session cell shows a short id and carries the full id in its title", () => {
+  const long = makeSummary({ sessionId: "11111111-2222-3333-4444-555555555555", title: "Long" });
+  render(<SessionTable sessions={[long]} onSelect={vi.fn()} />);
+  const cell = screen.getByText("11111111");
+  expect(cell).toHaveAttribute("title", "11111111-2222-3333-4444-555555555555");
+});
