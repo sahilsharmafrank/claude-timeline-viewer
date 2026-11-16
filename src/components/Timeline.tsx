@@ -31,11 +31,11 @@ export function Timeline({
         ))}
       </div>
       <div className="space-y-2">
-        {events
-          .filter((e) => !hidden.has(e.kind))
-          .map((e, i) => (
-            <EventView key={e.uuid ?? `i${i}`} event={e} subagents={subagents} />
-          ))}
+        {events.map((e, i) =>
+          hidden.has(e.kind) ? null : (
+            <EventView key={`${e.uuid ?? "-"}:${i}`} event={e} subagents={subagents} />
+          ),
+        )}
       </div>
     </section>
   );
