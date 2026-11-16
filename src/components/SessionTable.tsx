@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState } from "react";
+import { LocalTime } from "./LocalTime";
 import { formatDuration, formatTokens } from "@/lib/format";
 import type { SessionSummary } from "@/lib/transcripts/types";
 
@@ -35,20 +36,6 @@ function topTools(tools: Record<string, number>): string {
   const shown = entries.slice(0, 3).map(([name, n]) => `${name}×${n}`);
   if (entries.length > 3) shown.push(`+${entries.length - 3}`);
   return shown.join(" ");
-}
-
-const subscribeNoop = () => () => {};
-
-// Server and first client render show the ISO string; after hydration the
-// viewer's local date/time replaces it, so there is no hydration mismatch.
-function LocalTime({ iso }: { iso: string | null }) {
-  const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
-  if (!iso) return <>—</>;
-  const d = new Date(iso);
-  const text = mounted
-    ? `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-    : iso;
-  return <time dateTime={iso}>{text}</time>;
 }
 
 const COLUMNS: { label: string; key?: SortKey; numeric?: boolean }[] = [
