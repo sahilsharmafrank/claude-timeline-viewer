@@ -61,3 +61,19 @@ test("error result has red border; missing subagent noted", () => {
   expect(screen.getByText("Subagent transcript not found")).toBeInTheDocument();
   expect(container.querySelector(".border-red-500")).not.toBeNull();
 });
+
+test("error results are open by default, successes collapsed", () => {
+  const { unmount } = render(<ToolCard subagents={{}} event={tool({ name: "Read", input: { file_path: "/a" },
+    result: { content: "boom", isError: true, truncated: false } })} />);
+  expect(screen.getByText("boom")).toBeInTheDocument();
+  unmount();
+  render(<ToolCard subagents={{}} event={tool({ name: "Read", input: { file_path: "/a" },
+    result: { content: "fine", isError: false, truncated: false } })} />);
+  expect(screen.queryByText("fine")).not.toBeInTheDocument();
+});
+
+test("subagent label has no null when agentType is missing", () => {
+  const run: SubagentRun = { agentId: "ag1", agentType: null, description: null, model: null, toolUseId: "t1", events: [] };
+  render(<ToolCard subagents={{ ag1: run }} event={tool({ name: "Agent", input: { prompt: "p" }, subagentId: "ag1" })} />);
+  expect(screen.getByRole("button", { name: "▸ Subagent · 0 events" })).toBeInTheDocument();
+});

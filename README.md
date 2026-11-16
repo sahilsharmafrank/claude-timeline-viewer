@@ -22,6 +22,8 @@ This builds and starts the server, then open <http://127.0.0.1:3000>.
 npm run dev
 ```
 
+Dev runs on <http://127.0.0.1:3000>. Both modes bind to `127.0.0.1` only.
+
 ## Using a different transcripts folder
 
 The root defaults to `~/.claude/projects`. Override it with `CLAUDE_ROOT`:

@@ -60,7 +60,7 @@ export function EventView({ event, subagents }: { event: Event; subagents: Recor
     case "text":
       return (
         <div className="space-y-2 [&_a]:underline [&_code]:font-mono [&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:overflow-x-auto [&_ul]:list-disc [&_ul]:pl-5">
-          <Markdown>{event.text}</Markdown>
+          <Markdown disallowedElements={["img"]} unwrapDisallowed>{event.text}</Markdown>
         </div>
       );
     case "thinking":

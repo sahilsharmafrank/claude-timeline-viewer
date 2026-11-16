@@ -130,3 +130,14 @@ test("prompt title is cut to 80 characters", () => {
   writeSession(root, "-p", SID, [userPrompt("x".repeat(200), { uuid: "u1" })]);
   expect(summarize(discover(root)[0]).title).toBe("x".repeat(80));
 });
+
+test("isMeta array lines do not count as prompts or become the title", () => {
+  const root = makeRoot();
+  const meta = userPrompt("x", { uuid: "u0", sec: 0 });
+  (meta.message as Record<string, unknown>).content = [{ type: "text", text: "Base directory for this skill: /s" }];
+  meta.isMeta = true;
+  writeSession(root, "-p", SID, [meta, userPrompt("real prompt", { uuid: "u1", sec: 1 })]);
+  const s = summarize(discover(root)[0]);
+  expect(s.prompts).toBe(1);
+  expect(s.title).toBe("real prompt");
+});

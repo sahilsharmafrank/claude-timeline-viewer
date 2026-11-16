@@ -1,6 +1,6 @@
 import { buildDetail } from "./timeline";
 import { discover } from "./reader";
-import { assistant, makeRoot, toolResults, userPrompt, writeSession } from "../../../test/factories";
+import { assistant, attachment, makeRoot, toolResults, userPrompt, writeSession } from "../../../test/factories";
 
 const SID = "11111111-2222-3333-4444-555555555555";
 const detail = (root: string) => buildDetail(discover(root)[0]);
@@ -52,4 +52,19 @@ test("nested subagents link by toolUseId", () => {
   expect(d.subagents.ag1.agentType).toBe("Explore");
   expect(d.subagents.ag1.events[0]).toMatchObject({ subagentId: "ag2" });
   expect(d.subagents.ag2.events[0]).toMatchObject({ kind: "text", text: "deep" });
+});
+
+test("detail payload stays bounded for hostile sessions", () => {
+  const root = makeRoot();
+  const lines = Array.from({ length: 500 }, (_, i) =>
+    attachment({ type: "hook_success", hookEvent: "PostToolUse", stdout: "o".repeat(50_000) }, { uuid: `h${i}`, sec: i }),
+  );
+  const img = userPrompt("x", { uuid: "img", sec: 600 });
+  (img.message as Record<string, unknown>).content = [{ type: "image", source: { type: "base64", data: "A".repeat(500_000) } }];
+  writeSession(root, "-p", SID, [
+    ...lines,
+    assistant("m1", { type: "tool_use", id: "t1", name: "Write", input: { content: "w".repeat(200_000) } }, { uuid: "a1", sec: 601 }),
+    img,
+  ]);
+  expect(JSON.stringify(detail(root)).length).toBeLessThan(3_000_000);
 });

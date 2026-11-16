@@ -29,3 +29,14 @@ test("unknown line type is still shown", () => {
   show({ ...base, kind: "raw", lineType: "brand-new", data: { foo: 1 } });
   expect(screen.getByRole("button", { name: /Unrecognized · brand-new/ })).toBeInTheDocument();
 });
+
+test("markdown images are not rendered", () => {
+  const { container } = show({ ...base, kind: "text", text: "hi ![x](http://e/x.png)", model: null });
+  expect(container.querySelector("img")).toBeNull();
+});
+
+test("raw html in text is not rendered as elements", () => {
+  const { container } = show({ ...base, kind: "text", text: "<script>alert(1)</script><b>hi</b>", model: null });
+  expect(container.querySelector("script")).toBeNull();
+  expect(container.querySelector("b")).toBeNull();
+});

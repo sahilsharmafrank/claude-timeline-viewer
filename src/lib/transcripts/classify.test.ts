@@ -133,15 +133,72 @@ test("long text is clipped and flagged truncated", () => {
   const big = "x".repeat(20_001);
   const inj = one(attachment({ type: "skill_listing", content: big }, { uuid: "i1" }));
   expect(inj).toMatchObject({ kind: "injected", truncated: true });
-  expect((inj as { text: string }).text).toHaveLength(20_000);
+  expect((inj as { text: string }).text).toHaveLength(4_000);
 
   const hook = one(attachment({ type: "hook_success", hookEvent: "X", stdout: big, stderr: big, content: big }, { uuid: "h1" }));
   expect(hook).toMatchObject({ kind: "hook" });
   for (const f of ["stdout", "stderr", "content"] as const) {
-    expect((hook as unknown as Record<string, string>)[f]).toHaveLength(20_000);
+    const v = (hook as unknown as Record<string, string>)[f];
+    expect(v).toHaveLength(4_000 + "\n… [truncated]".length);
+    expect(v.endsWith("\n… [truncated]")).toBe(true);
   }
 
   const r = extractToolResults(toolResults([["t1", big, false]], { uuid: "u2" }));
   expect(r.get("t1")?.truncated).toBe(true);
   expect(r.get("t1")?.content).toHaveLength(20_000);
+});
+
+const userBlocks = (blocks: unknown[]) => {
+  const l = userPrompt("x", { uuid: "u1" });
+  (l.message as Record<string, unknown>).content = blocks;
+  return l;
+};
+
+test("isMeta array content is injected meta, not a prompt", () => {
+  const l = userBlocks([{ type: "text", text: "Base directory for this skill: /x" }]);
+  l.isMeta = true;
+  expect(one(l)).toMatchObject({ kind: "injected", source: "meta", text: "Base directory for this skill: /x" });
+  const c = userBlocks([{ type: "text", text: "summary" }]);
+  c.isCompactSummary = true;
+  expect(one(c)).toMatchObject({ kind: "injected", source: "compact_summary" });
+});
+
+test("injected text is clipped to 4000", () => {
+  const e = one(attachment({ type: "x", content: "y".repeat(5000) }, { uuid: "i" }));
+  expect(e).toMatchObject({ truncated: true });
+  expect((e as { text: string }).text).toHaveLength(4_000);
+});
+
+test("tool input strings are clipped recursively, assistant text and thinking too", () => {
+  const big = "z".repeat(30_000);
+  const t = one(assistant("m", { type: "tool_use", id: "t", name: "Write", input: { a: big, n: { b: [big, 3] } } }, { uuid: "a" }));
+  const input = (t as unknown as { input: { a: string; n: { b: [string, number] } } }).input;
+  expect(input.a).toHaveLength(10_000 + "… [truncated]".length);
+  expect(input.a.endsWith("… [truncated]")).toBe(true);
+  expect(input.n.b[0]).toHaveLength(10_000 + "… [truncated]".length);
+  expect(input.n.b[1]).toBe(3);
+  for (const block of [{ type: "text", text: big }, { type: "thinking", thinking: big }]) {
+    const e = one(assistant("m", block, { uuid: "a" })) as { text: string };
+    expect(e.text).toHaveLength(20_000 + "… [truncated]".length);
+    expect(e.text.endsWith("… [truncated]")).toBe(true);
+  }
+});
+
+test("user image block is an injected [image], unknown block raw carries only the block", () => {
+  expect(one(userBlocks([{ type: "image", source: { data: "A".repeat(1000) } }])))
+    .toMatchObject({ kind: "injected", source: "image", text: "[image]" });
+  const e = one(userBlocks([{ type: "weird", payload: "p".repeat(20_000) }]));
+  expect(e).toMatchObject({ kind: "raw", lineType: "user:weird" });
+  const data = (e as { data: Record<string, unknown> }).data;
+  expect(data.type).toBe("weird");
+  expect(data.message).toBeUndefined();
+  expect((data.payload as string).length).toBeLessThan(10_100);
+  const a = one(assistant("m", { type: "server_tool_use", id: "x" }, { uuid: "a" })) as { data: Record<string, unknown> };
+  expect(a.data).toEqual({ type: "server_tool_use", id: "x" });
+});
+
+test("only known wrapper tags make a typed prompt injected", () => {
+  expect(one(userPrompt("<div> is misaligned", { uuid: "u" }))).toMatchObject({ kind: "prompt" });
+  expect(one(userPrompt("<system-reminder>x</system-reminder>", { uuid: "u" }))).toMatchObject({ kind: "injected" });
+  expect(one(userPrompt("<div>x", { uuid: "u", extra: { isMeta: true } }))).toMatchObject({ kind: "injected" });
 });

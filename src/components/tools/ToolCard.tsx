@@ -72,7 +72,7 @@ export function ToolCard({ event, subagents }: { event: ToolEvent; subagents: Re
         <div className="text-neutral-500">No result recorded</div>
       ) : (
         <div className={`rounded border px-2 py-1 ${result.isError ? "border-red-500" : "border-transparent"}`}>
-          {event.name === "Bash" ? pre : <Collapsible label="Result">{pre}</Collapsible>}
+          {event.name === "Bash" ? pre : <Collapsible label="Result" defaultOpen={result.isError}>{pre}</Collapsible>}
           {result.truncated && (
             <div className="text-xs text-amber-600">Output truncated to 20,000 characters</div>
           )}

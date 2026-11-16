@@ -1,6 +1,17 @@
 import "server-only";
 import type { Event, RawLine, ToolResult } from "./types";
-import { asNumber, asRecord, asString, clip } from "./util";
+import {
+  CLIP_HOOK,
+  CLIP_INJECTED,
+  CLIP_TEXT,
+  CLIP_TOOL_RESULT,
+  asNumber,
+  asRecord,
+  asString,
+  clip,
+  clipDeep,
+  clipMarked,
+} from "./util";
 
 export const BOOKKEEPING_TYPES: ReadonlySet<string> = new Set([
   "ai-title",
@@ -47,8 +58,19 @@ function commandEvent(base: Base, text: string): Event | null {
   return { ...base, kind: "command", name, args: tag(text, "command-args") ?? "" };
 }
 
+const WRAPPER_TAGS = [
+  "<command-",
+  "<local-command-",
+  "<bash-input",
+  "<bash-stdout",
+  "<bash-stderr",
+  "<task-notification",
+  "<system-reminder",
+  "<user-memory-input",
+];
+
 function injected(base: Base, source: string, text: string): Event {
-  const [clipped, truncated] = clip(text);
+  const [clipped, truncated] = clip(text, CLIP_INJECTED);
   return { ...base, kind: "injected", source, text: clipped, truncated };
 }
 
@@ -58,8 +80,8 @@ function joinText(v: unknown, sep: string): string {
   return "";
 }
 
-function rawEvent(base: Base, line: RawLine, lineType: string): Event {
-  return { ...base, kind: "raw", lineType, data: line };
+function rawEvent(base: Base, data: unknown, lineType: string): Event {
+  return { ...base, kind: "raw", lineType, data: asRecord(clipDeep(data)) ?? {} };
 }
 
 function classifyUser(base: Base, line: RawLine): Event[] {
@@ -70,7 +92,7 @@ function classifyUser(base: Base, line: RawLine): Event[] {
       if (cmd) return [cmd];
     }
     const compact = line.isCompactSummary === true;
-    if (compact || line.isMeta === true || content.startsWith("<")) {
+    if (compact || line.isMeta === true || WRAPPER_TAGS.some((t) => content.startsWith(t))) {
       return [injected(base, compact ? "compact_summary" : "meta", content)];
     }
     return [{ ...base, kind: "prompt", text: content }];
@@ -83,13 +105,17 @@ function classifyUser(base: Base, line: RawLine): Event[] {
       if (type === "tool_result") continue;
       if (type === "text") {
         const text = asString(block?.text) ?? "";
-        events.push(
-          text.startsWith("<system-reminder>")
-            ? injected(base, "system-reminder", text)
-            : { ...base, kind: "prompt", text },
-        );
+        if (line.isCompactSummary === true || line.isMeta === true) {
+          events.push(injected(base, line.isCompactSummary === true ? "compact_summary" : "meta", text));
+        } else if (text.startsWith("<system-reminder>")) {
+          events.push(injected(base, "system-reminder", text));
+        } else {
+          events.push({ ...base, kind: "prompt", text });
+        }
+      } else if (type === "image") {
+        events.push(injected(base, "image", "[image]"));
       } else {
-        events.push(rawEvent(base, line, `user:${type ?? "unknown"}`));
+        events.push(rawEvent(base, block ?? item, `user:${type ?? "unknown"}`));
       }
     }
     return events;
@@ -105,10 +131,10 @@ function classifyAssistant(base: Base, line: RawLine): Event[] {
     const block = asRecord(item);
     const type = asString(block?.type);
     if (block && type === "text") {
-      return { ...base, kind: "text", text: asString(block.text) ?? "", model: asString(message?.model) };
+      return { ...base, kind: "text", text: clipMarked(asString(block.text) ?? "", CLIP_TEXT), model: asString(message?.model) };
     }
     if (block && type === "thinking") {
-      return { ...base, kind: "thinking", text: asString(block.thinking) ?? "" };
+      return { ...base, kind: "thinking", text: clipMarked(asString(block.thinking) ?? "", CLIP_TEXT) };
     }
     if (block && type === "tool_use") {
       return {
@@ -116,17 +142,17 @@ function classifyAssistant(base: Base, line: RawLine): Event[] {
         kind: "tool",
         toolUseId: asString(block.id) ?? "",
         name: asString(block.name) ?? "",
-        input: asRecord(block.input) ?? {},
+        input: asRecord(clipDeep(block.input)) ?? {},
         result: null,
         subagentId: null,
       };
     }
-    return rawEvent(base, line, `assistant:${type ?? "unknown"}`);
+    return rawEvent(base, block ?? item, `assistant:${type ?? "unknown"}`);
   });
 }
 
 function clipped(text: string): string {
-  return clip(text)[0];
+  return clipMarked(text, CLIP_HOOK, "\n");
 }
 
 function classifyAttachment(base: Base, line: RawLine): Event[] {
@@ -233,7 +259,7 @@ export function extractToolResults(line: RawLine): Map<string, ToolResult> {
     const block = asRecord(item);
     const id = asString(block?.tool_use_id);
     if (!block || block.type !== "tool_result" || id === null) continue;
-    const [text, truncated] = clip(normalizeContent(block.content));
+    const [text, truncated] = clip(normalizeContent(block.content), CLIP_TOOL_RESULT);
     results.set(id, { content: text, isError: block.is_error === true, truncated });
   }
   return results;

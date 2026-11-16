@@ -23,8 +23,30 @@ export function addUsage(t: TokenTotals, usage: unknown): void {
   t.total = t.input + t.output + t.cacheCreation + t.cacheRead;
 }
 
-export function clip(text: string, limit = 20_000): [string, boolean] {
+export const CLIP_TOOL_RESULT = 20_000;
+export const CLIP_HOOK = 4_000;
+export const CLIP_INJECTED = 4_000;
+export const CLIP_TEXT = 20_000;
+export const CLIP_INPUT_STRING = 10_000;
+
+const MARK = "… [truncated]";
+
+export function clip(text: string, limit = CLIP_TOOL_RESULT): [string, boolean] {
   return text.length > limit ? [text.slice(0, limit), true] : [text, false];
+}
+
+/** Clip and append a visible marker when something was cut. */
+export function clipMarked(text: string, limit: number, sep = ""): string {
+  return text.length > limit ? text.slice(0, limit) + sep + MARK : text;
+}
+
+/** Clip every string inside a JSON-like value, recursively. */
+export function clipDeep(value: unknown, limit = CLIP_INPUT_STRING): unknown {
+  if (typeof value === "string") return clipMarked(value, limit);
+  if (Array.isArray(value)) return value.map((v) => clipDeep(v, limit));
+  const rec = asRecord(value);
+  if (rec) return Object.fromEntries(Object.entries(rec).map(([k, v]) => [k, clipDeep(v, limit)]));
+  return value;
 }
 
 export function asRecord(v: unknown): Record<string, unknown> | null {

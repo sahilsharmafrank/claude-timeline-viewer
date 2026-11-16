@@ -27,7 +27,7 @@ export function SubagentView({
         </Collapsible>
       )}
       {run ? (
-        <Collapsible label={`Subagent · ${run.agentType} · ${run.events.length} events`}>
+        <Collapsible label={`Subagent${run.agentType ? ` · ${run.agentType}` : ""} · ${run.events.length} events`}>
           <Timeline events={run.events} subagents={subagents} />
         </Collapsible>
       ) : (

@@ -1,6 +1,6 @@
 import "server-only";
 import { classify, extractToolResults } from "./classify";
-import { summarize } from "./aggregate";
+import { defaultCache } from "./aggregate";
 import { readJsonl, readMeta, type SessionFile } from "./reader";
 import { asString } from "./util";
 import type { Event, SessionDetail, SubagentRun, ToolResult } from "./types";
@@ -44,7 +44,7 @@ export function buildDetail(sf: SessionFile): SessionDetail {
   for (const run of Object.values(subagents)) run.events = link(run.events);
 
   return {
-    summary: summarize(sf),
+    summary: defaultCache.get(sf),
     events: link(buildEvents(sf.path)),
     subagents,
   };
