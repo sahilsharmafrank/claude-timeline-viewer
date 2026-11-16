@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { formatDuration, formatTokens } from "@/lib/format";
 import type { SessionSummary } from "@/lib/transcripts/types";
 
@@ -37,10 +37,18 @@ function topTools(tools: Record<string, number>): string {
   return shown.join(" ");
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+const subscribeNoop = () => () => {};
+
+// Server and first client render show the ISO string; after hydration the
+// viewer's local date/time replaces it, so there is no hydration mismatch.
+function LocalTime({ iso }: { iso: string | null }) {
+  const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
+  if (!iso) return <>—</>;
   const d = new Date(iso);
-  return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  const text = mounted
+    ? `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+    : iso;
+  return <time dateTime={iso}>{text}</time>;
 }
 
 const COLUMNS: { label: string; key?: SortKey; numeric?: boolean }[] = [
@@ -113,7 +121,7 @@ export function SessionTable({
             }}
             className="cursor-pointer odd:bg-neutral-50 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none dark:odd:bg-neutral-900/50 dark:hover:bg-neutral-800 dark:focus:bg-neutral-800"
           >
-            <td className="whitespace-nowrap px-2 py-1">{formatDate(s.startedAt)}</td>
+            <td className="whitespace-nowrap px-2 py-1"><LocalTime iso={s.startedAt} /></td>
             <td className="px-2 py-1">{s.project}</td>
             <td className="max-w-md truncate px-2 py-1">{s.title}</td>
             <td className="whitespace-nowrap px-2 py-1 text-right">{formatDuration(s.durationSeconds)}</td>

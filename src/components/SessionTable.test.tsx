@@ -20,3 +20,12 @@ test("filter matches title, project and tool names", () => {
   expect(filterSessions([a, b], "api").map(s => s.sessionId)).toEqual(["b"]);
   expect(filterSessions([a, b], "bash").map(s => s.sessionId)).toEqual(["a"]);
 });
+
+test("date cell shows the viewer's local date and time", () => {
+  render(<SessionTable sessions={[a]} onSelect={vi.fn()} />);
+  const d = new Date("2026-11-15T10:00:00Z");
+  const expected = `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  const time = screen.getByText(expected);
+  expect(time.tagName).toBe("TIME");
+  expect(time).toHaveAttribute("datetime", "2026-11-15T10:00:00Z");
+});
