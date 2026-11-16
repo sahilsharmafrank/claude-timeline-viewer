@@ -27,7 +27,7 @@ function addTokensOncePerMessage(lines: RawLine[], tokens: ReturnType<typeof emp
 export function summarize(sf: SessionFile): SessionSummary {
   const lines = readJsonl(sf.path);
 
-  const firstCwd = asString(lines[0]?.cwd);
+  const firstCwd = lines.map((l) => asString(l.cwd)).find((c) => c !== null) ?? null;
   const projectPath = firstCwd ?? decodeProjectDir(sf.projectDir);
 
   let aiTitle: string | null = null;
