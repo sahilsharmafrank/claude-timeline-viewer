@@ -66,3 +66,82 @@ test("extractToolResults normalizes content", () => {
   expect(r.get("t1")).toEqual({ content: "out", isError: false, truncated: false });
   expect(r.get("t2")).toEqual({ content: "a\n[image]", isError: true, truncated: false });
 });
+
+test("malformed input becomes raw and never throws", () => {
+  const cases: [Record<string, unknown>, string][] = [
+    [{ type: "user", uuid: "m1", message: "oops" }, "user"],
+    [{ type: "user", uuid: "m2" }, "user"],
+    [{ type: "assistant", uuid: "m3", message: "oops" }, "assistant"],
+    [{ type: "assistant", uuid: "m4", message: { content: "a string" } }, "assistant"],
+    [{ type: "attachment", uuid: "m5" }, "attachment"],
+    [{ type: "attachment", uuid: "m6", attachment: "str" }, "attachment"],
+    [{ type: 5, uuid: "m7" }, "unknown"],
+    [{ uuid: "m8" }, "unknown"],
+  ];
+  for (const [line, lineType] of cases) {
+    const e = one(line);
+    expect(e).toMatchObject({ kind: "raw", lineType, data: line });
+  }
+});
+
+test("missing envelope fields default to null/false", () => {
+  expect(one({ type: "user", message: { content: "hi" } })).toMatchObject({
+    uuid: null, parentUuid: null, timestamp: null, isSidechain: false,
+  });
+});
+
+test("compact summary is injected with compact_summary source", () => {
+  expect(one(userPrompt("This session is being continued", { uuid: "c1", extra: { isCompactSummary: true } })))
+    .toMatchObject({ kind: "injected", source: "compact_summary" });
+});
+
+test("string starting with < is injected as meta", () => {
+  expect(one(userPrompt("<local-command-stdout>x</local-command-stdout>", { uuid: "c2" })))
+    .toMatchObject({ kind: "injected", source: "meta" });
+});
+
+test("local_command system line becomes a command", () => {
+  expect(one(system("local_command", { uuid: "l1", fields: {
+    content: "<command-name>/clear</command-name>\n<command-args></command-args>" } })))
+    .toMatchObject({ kind: "command", name: "/clear", args: "" });
+});
+
+test("unknown assistant block becomes raw", () => {
+  expect(one(assistant("m1", { type: "server_tool_use", id: "x" }, { uuid: "a1" })))
+    .toMatchObject({ kind: "raw", lineType: "assistant:server_tool_use" });
+});
+
+test("plain text block in a user block list is a prompt", () => {
+  const l = userPrompt("x", { uuid: "u1" });
+  (l.message as Record<string, unknown>).content = [{ type: "text", text: "hello" }];
+  expect(one(l)).toMatchObject({ kind: "prompt", text: "hello" });
+});
+
+test("injected fallbacks: attachment string content, then JSON", () => {
+  expect(one(attachment({ type: "date", content: "2026-11-16" }, { uuid: "i1" })))
+    .toMatchObject({ kind: "injected", source: "date", text: "2026-11-16" });
+  expect(one(attachment({ type: "environment", cwd: "/x" }, { uuid: "i2" })))
+    .toMatchObject({ source: "environment", text: JSON.stringify({ type: "environment", cwd: "/x" }, null, 2) });
+});
+
+test("hookName falls back to hookEvent", () => {
+  expect(one(attachment({ type: "hook_system_message", hookEvent: "Stop" }, { uuid: "h1" })))
+    .toMatchObject({ kind: "hook", hookEvent: "Stop", hookName: "Stop", command: null, exitCode: null, durationMs: null });
+});
+
+test("long text is clipped and flagged truncated", () => {
+  const big = "x".repeat(20_001);
+  const inj = one(attachment({ type: "skill_listing", content: big }, { uuid: "i1" }));
+  expect(inj).toMatchObject({ kind: "injected", truncated: true });
+  expect((inj as { text: string }).text).toHaveLength(20_000);
+
+  const hook = one(attachment({ type: "hook_success", hookEvent: "X", stdout: big, stderr: big, content: big }, { uuid: "h1" }));
+  expect(hook).toMatchObject({ kind: "hook" });
+  for (const f of ["stdout", "stderr", "content"] as const) {
+    expect((hook as unknown as Record<string, string>)[f]).toHaveLength(20_000);
+  }
+
+  const r = extractToolResults(toolResults([["t1", big, false]], { uuid: "u2" }));
+  expect(r.get("t1")?.truncated).toBe(true);
+  expect(r.get("t1")?.content).toHaveLength(20_000);
+});
