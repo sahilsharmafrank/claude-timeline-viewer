@@ -2,8 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-// Switch to the import from src/lib/transcripts/types.ts in Task 2.
-export type RawLine = Record<string, unknown>;
+import type { RawLine } from "../src/lib/transcripts/types";
 
 const SESSION_ID = "sess-1";
 const BASE_MS = Date.parse("2026-11-16T10:00:00.000Z");
