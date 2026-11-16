@@ -35,14 +35,24 @@ test("agent call expands into nested subagent timeline", async () => {
   expect(screen.getByText("found it")).toBeInTheDocument();
 });
 
-test("unknown tool falls back to generic", () => {
+test("unknown tool falls back to generic", async () => {
   render(<ToolCard subagents={{}} event={tool({ name: "mcp__x__y", input: { a: 1 } })} />);
   expect(screen.getByText("mcp__x__y")).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: /Input/ }));
+  expect(screen.getByText(/"a": 1/)).toBeInTheDocument();
 });
 
-test("known tool with missing field falls back instead of crashing", () => {
-  render(<ToolCard subagents={{}} event={tool({ name: "Read", input: {} })} />);
+test("known tool with missing field falls back instead of crashing", async () => {
+  render(<ToolCard subagents={{}} event={tool({ name: "Read", input: { offset: 3 } })} />);
   expect(screen.getByText("Read")).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: /Input/ }));
+  expect(screen.getByText(/"offset": 3/)).toBeInTheDocument();
+});
+
+test("bash with non-string command falls back to generic", async () => {
+  render(<ToolCard subagents={{}} event={tool({ name: "Bash", input: { command: 42 } })} />);
+  await userEvent.click(screen.getByRole("button", { name: /Input/ }));
+  expect(screen.getByText(/"command": 42/)).toBeInTheDocument();
 });
 
 test("error result has red border; missing subagent noted", () => {
