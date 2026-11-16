@@ -26,6 +26,7 @@ export function HeaderStrip({ summary: s }: { summary: SessionSummary }) {
       <div>
         <h1 className="text-lg font-semibold">{s.title}</h1>
         <p className="text-sm text-neutral-500">{s.projectPath}</p>
+        <p className="font-mono text-xs text-neutral-500">{s.sessionId}</p>
       </div>
       <dl className="flex flex-wrap gap-x-6 gap-y-2">
         <Stat label="Started"><LocalTime iso={s.startedAt} /></Stat>

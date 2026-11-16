@@ -11,3 +11,8 @@ test("shows token total, tool tally, skills and duration", () => {
   expect(screen.getByText("tdd")).toBeInTheDocument();
   expect(screen.getByText("3m 05s")).toBeInTheDocument();
 });
+
+test("shows the full session id", () => {
+  render(<HeaderStrip summary={makeSummary({ sessionId: "11111111-2222-3333-4444-555555555555" })} />);
+  expect(screen.getByText("11111111-2222-3333-4444-555555555555")).toBeInTheDocument();
+});
