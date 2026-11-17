@@ -62,19 +62,19 @@ function ToolView({ event, subagents }: { event: ToolEvent; subagents: Record<st
 export function ToolCard({ event, subagents }: { event: ToolEvent; subagents: Record<string, SubagentRun> }) {
   const { result } = event;
   const pre = (
-    <pre className="max-h-96 overflow-auto whitespace-pre-wrap font-mono text-xs">{result?.content}</pre>
+    <pre className="max-h-96 overflow-auto whitespace-pre-wrap font-mono text-xs text-fg">{result?.content}</pre>
   );
   return (
-    <div className="space-y-2 rounded border border-neutral-300 px-2 py-1 text-sm dark:border-neutral-700">
-      <h4 className="font-semibold">{event.name}</h4>
+    <div className="space-y-2 rounded-md border border-line bg-panel px-3 py-2.5 text-sm">
+      <h4 className="font-mono text-xs font-semibold tracking-wide text-signal">{event.name}</h4>
       <ToolView event={event} subagents={subagents} />
       {result === null ? (
-        <div className="text-neutral-500">No result recorded</div>
+        <div className="text-xs text-faint">No result recorded</div>
       ) : (
-        <div className={`rounded border px-2 py-1 ${result.isError ? "border-red-500" : "border-transparent"}`}>
+        <div className={`rounded-md border px-2.5 py-1.5 ${result.isError ? "border-red-500" : "border-transparent bg-code/60"}`}>
           {event.name === "Bash" ? pre : <Collapsible label="Result" defaultOpen={result.isError}>{pre}</Collapsible>}
           {result.truncated && (
-            <div className="text-xs text-amber-600">Output truncated to 20,000 characters</div>
+            <div className="mt-1 text-xs text-signal">Output truncated to 20,000 characters</div>
           )}
         </div>
       )}

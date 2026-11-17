@@ -8,13 +8,20 @@ import { Timeline } from "./Timeline";
 
 export function SessionDetailView({ detail }: { detail: SessionDetail }) {
   return (
-    <main className="mx-auto max-w-5xl space-y-4 p-4">
-      <div className="flex items-center justify-between">
-        <Link href="/" className="text-sm hover:underline">← All sessions</Link>
+    <main className="mx-auto w-full max-w-4xl px-5 py-7">
+      <div className="mb-5 flex items-center justify-between">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-fg"
+        >
+          <span aria-hidden>←</span> All sessions
+        </Link>
         <RefreshButton />
       </div>
-      <HeaderStrip summary={detail.summary} />
-      <Timeline events={detail.events} subagents={detail.subagents} />
+      <div className="space-y-6">
+        <HeaderStrip summary={detail.summary} />
+        <Timeline events={detail.events} subagents={detail.subagents} />
+      </div>
     </main>
   );
 }

@@ -1,18 +1,103 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ===========================================================================
+   Claude Session Viewer — "amber console"
+   A cool-ink telemetry surface with one signal accent (amber). Light "paper"
+   and dark "console" are both first-class; tokens flip under the media query
+   and are mapped into Tailwind utilities via @theme inline.
+   =========================================================================== */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+:root {
+  color-scheme: light;
+  --bg: #f3f4f6;          /* app background — cool paper */
+  --panel: #ffffff;       /* raised surface */
+  --code: #eef0f4;        /* inset / code surface */
+  --fg: #181b20;          /* primary text — cool ink */
+  --muted: #565d69;       /* secondary text */
+  --faint: #878e9b;       /* tertiary — ids, meta, rails */
+  --line: #e4e7ec;        /* hairline */
+  --line2: #d2d7df;       /* stronger divider */
+  --signal: #985f10;      /* amber as TEXT (bronze) — AA on paper */
+  --signal-bg: #e89a2e;   /* amber as fill / marker */
+  --signal-soft: #faeccf; /* amber-tinted surface */
+  --danger: #b23520;      /* removed / error */
+  --add: #2c7a4b;         /* added */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: dark;
+    --bg: #0c0f14;
+    --panel: #141a23;
+    --code: #0a0e14;
+    --fg: #e6e9ee;
+    --muted: #9aa3b0;
+    --faint: #626a78;
+    --line: #212a35;
+    --line2: #313c4b;
+    --signal: #f1b457;      /* bright amber text on ink */
+    --signal-bg: #eda43b;
+    --signal-soft: #211c11; /* amber-tinted ink */
+    --danger: #e8705c;
+    --add: #5cbd87;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-code: var(--code);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line2: var(--line2);
+  --color-signal: var(--signal);
+  --color-signalbg: var(--signal-bg);
+  --color-signalsoft: var(--signal-soft);
+  --color-danger: var(--danger);
+  --color-add: var(--add);
+  /* legacy aliases */
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* Default hairline color for the plain `border` utility. */
+*,
+::before,
+::after {
+  border-color: var(--line);
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--signal-bg) 32%, transparent);
+}
+
+/* Keyboard focus — one consistent amber ring everywhere. */
+:focus-visible {
+  outline: 2px solid var(--signal-bg);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Thin console scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }

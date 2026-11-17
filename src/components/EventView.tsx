@@ -5,21 +5,21 @@ import type { Event, SubagentRun } from "@/lib/transcripts/types";
 import { Collapsible } from "./Collapsible";
 import { ToolCard } from "./tools/ToolCard";
 
-const pre = "overflow-x-auto whitespace-pre-wrap break-words rounded bg-neutral-100 p-2 text-xs dark:bg-neutral-900";
+const pre = "overflow-x-auto whitespace-pre-wrap break-words rounded-md bg-code p-2.5 text-xs text-fg";
 
 export function EventView({ event, subagents }: { event: Event; subagents: Record<string, SubagentRun> }) {
   switch (event.kind) {
     case "prompt":
       return (
-        <div className="rounded border border-blue-300 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
-          <div className="mb-1 text-xs font-medium text-blue-700 dark:text-blue-300">You</div>
-          <div className="whitespace-pre-wrap">{event.text}</div>
+        <div className="rounded-md border border-line border-l-2 border-l-signalbg bg-signalsoft px-4 py-3">
+          <div className="mb-1 text-xs font-medium text-signal">You</div>
+          <div className="whitespace-pre-wrap text-fg">{event.text}</div>
         </div>
       );
     case "command":
       return (
-        <div className="text-sm">
-          <span className="rounded bg-purple-200 px-1.5 py-0.5 font-mono text-xs dark:bg-purple-900">{event.name}</span>{" "}
+        <div className="text-sm text-muted">
+          <span className="rounded bg-code px-1.5 py-0.5 font-mono text-xs font-medium text-signal">{event.name}</span>{" "}
           {event.args}
         </div>
       );
@@ -27,20 +27,20 @@ export function EventView({ event, subagents }: { event: Event; subagents: Recor
       return (
         <Collapsible label={`Injected · ${event.source}`}>
           <pre className={pre}>{event.text}</pre>
-          {event.truncated && <p className="text-xs text-neutral-500">(truncated)</p>}
+          {event.truncated && <p className="text-xs text-faint">(truncated)</p>}
         </Collapsible>
       );
     case "hook":
       return (
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+          <div className="flex items-center gap-2 text-sm text-muted">
             <span>{`Hook · ${event.hookEvent} · ${event.hookName}`}</span>
             {event.exitCode !== null && (
               <span
-                className={`rounded px-1.5 py-0.5 text-xs ${
+                className={`rounded px-1.5 py-0.5 font-mono text-xs ${
                   event.exitCode === 0
-                    ? "bg-neutral-200 dark:bg-neutral-800"
-                    : "bg-red-200 text-red-900 dark:bg-red-900 dark:text-red-100"
+                    ? "bg-code text-muted"
+                    : "bg-danger/15 text-danger"
                 }`}
               >
                 {`exit ${event.exitCode}`}
@@ -59,14 +59,14 @@ export function EventView({ event, subagents }: { event: Event; subagents: Recor
       );
     case "text":
       return (
-        <div className="space-y-2 [&_a]:underline [&_code]:font-mono [&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:overflow-x-auto [&_ul]:list-disc [&_ul]:pl-5">
+        <div className="max-w-[72ch] space-y-2 text-[15px] leading-relaxed text-fg [&_a]:text-signal [&_a]:underline [&_code]:rounded [&_code]:bg-code [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.9em] [&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:overflow-x-auto [&_ul]:list-disc [&_ul]:pl-5">
           <Markdown disallowedElements={["img"]} unwrapDisallowed>{event.text}</Markdown>
         </div>
       );
     case "thinking":
       return (
         <Collapsible label="Thinking">
-          <div className="whitespace-pre-wrap text-sm italic text-neutral-600 dark:text-neutral-400">
+          <div className="whitespace-pre-wrap border-l border-line pl-3 text-sm italic text-muted">
             {event.text || "(thinking not recorded)"}
           </div>
         </Collapsible>
@@ -76,14 +76,14 @@ export function EventView({ event, subagents }: { event: Event; subagents: Recor
     case "system":
       if (event.subtype === "compact_boundary") {
         return (
-          <div className="flex w-full items-center gap-2 text-xs text-neutral-500">
-            <hr className="flex-1 border-neutral-300 dark:border-neutral-700" />
+          <div className="flex w-full items-center gap-3 text-xs text-faint">
+            <hr className="flex-1 border-line" />
             <span>Conversation compacted</span>
-            <hr className="flex-1 border-neutral-300 dark:border-neutral-700" />
+            <hr className="flex-1 border-line" />
           </div>
         );
       }
-      return <div className="text-xs text-neutral-500">{`${event.subtype}: ${event.text}`}</div>;
+      return <div className="text-xs text-faint">{`${event.subtype}: ${event.text}`}</div>;
     case "raw":
       return (
         <Collapsible label={`Unrecognized · ${event.lineType}`}>

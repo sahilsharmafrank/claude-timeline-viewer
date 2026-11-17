@@ -18,11 +18,11 @@ export function Collapsible({
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="text-left text-sm text-neutral-600 hover:underline dark:text-neutral-400"
+        className="text-left text-sm text-muted transition-colors hover:text-fg"
       >
         {open ? "▾" : "▸"} {label}
       </button>
-      {open && <div className="mt-1 pl-4">{children}</div>}
+      {open && <div className="mt-1.5 pl-4">{children}</div>}
     </div>
   );
 }
